@@ -162,5 +162,7 @@ function showDialog() {
             var selectedFlapTypeKey = flapTypeKeys[flapDropdown.selection.index];
 
             var dimensions = {
-                length: parseFloat(lengthInput.text) || 100,
-                width: parseFloat(width
+    length: parseFloat(lengthInput.text) || 100,
+    width: parseFloat(widthInput.text) || 100,
+    height: parseFloat(heightInput.text) || 50
+};
