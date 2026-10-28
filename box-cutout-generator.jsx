@@ -1,8 +1,8 @@
 // =============================================
-// PACKDORA BOX GENERATOR v2.1
-// Générateur de boîtes pour Adobe Illustrator (corrigé)
+// PACKDORA BOX GENERATOR v2.2
+// Générateur de boîtes pour Adobe Illustrator
 // Auteur : Illustrator Script Smith
-// Version : 2.1.0
+// Version : 2.2.0
 // Date : 28/10/2026
 // Compatibilité : Illustrator CC 2020+
 // =============================================
@@ -29,20 +29,19 @@ var MATERIALS = {
 var FLAP_TYPES = {
     "none": { name: "Aucun", factor: 0 },
     "simple": { name: "Rabats simples", factor: 1 },
-    "double_flap": { name: "Rabats doubles", factor: 2 },  // ✅ Corrigé (plus de 'double')
+    "double_flap": { name: "Rabats doubles", factor: 2 },
     "auto_lock": { name: "Auto-verrouillant", factor: 1.5 }
 };
 
 var WINDOW_SHAPES = {
     "none": "Aucune",
     "square": "Carrée",
-    "circle": "Ronde",
-    "hexagon": "Hexagonale"
+    "circle": "Ronde"
 };
 
 // ===== FONCTIONS UTILITAIRES =====
 function mmToPt(mm) {
-    return mm * 2.83464567; // 1mm ≈ 2.83464567pt
+    return mm * 2.83464567; // Conversion mm → pt
 }
 
 function createLayer(doc, name, color) {
@@ -56,12 +55,8 @@ function drawRect(layer, x, y, width, height, strokeColor, fillColor) {
     var rect = layer.pathItems.rectangle(y, x, width, height);
     rect.stroked = true;
     rect.strokeColor.rgb = strokeColor;
-    if (fillColor) {
-        rect.filled = true;
-        rect.fillColor.rgb = fillColor;
-    } else {
-        rect.filled = false;
-    }
+    rect.filled = (fillColor !== undefined);
+    if (fillColor) rect.fillColor.rgb = fillColor;
     return rect;
 }
 
@@ -100,41 +95,20 @@ function generateBox(doc, boxType, material, dimensions, flapType, options) {
         case "window_box":
             generateWindowBox(cutLayer, foldLayer, guideLayer, length, width, height, thickness, flapType, options);
             break;
-        case "gable":
-            generateGableBox(cutLayer, foldLayer, guideLayer, length, width, height, thickness, options);
-            break;
-        case "compartments_4":
-            generateCompartmentBox(cutLayer, foldLayer, guideLayer, length, width, height, thickness, 4);
-            break;
-    }
-
-    // Ajouter une fenêtre si demandé
-    if (options.addWindow && (boxType === "window_box" || boxType === "rectangular")) {
-        var windowSize = mmToPt(options.windowSize || 30);
-        var windowX = length / 2 - windowSize / 2;
-        var windowY = height / 2 - windowSize / 2;
-        if (options.windowShape === "square") {
-            drawRect(cutLayer, windowX, windowY, windowSize, windowSize, [255, 0, 0], null);
-        } else if (options.windowShape === "circle") {
-            drawCircle(cutLayer, windowX + windowSize / 2, windowY + windowSize / 2, windowSize / 2, [255, 0, 0]);
-        }
     }
 }
 
+// Génère une boîte rectangulaire
 function generateRectangularBox(cutLayer, foldLayer, guideLayer, length, width, height, thickness, flapType, options) {
-    // Base de la boîte
+    // Base
     drawRect(cutLayer, 0, 0, length, width, [255, 0, 0], null);
 
-    // Côtés
+    // Côtés (avant, droite, arrière, gauche)
     var sideHeight = height;
-    // Côté avant
-    drawRect(cutLayer, 0, width, length, sideHeight, [255, 0, 0], null);
-    // Côté droit
-    drawRect(cutLayer, length, 0, sideHeight, width, [255, 0, 0], null);
-    // Côté arrière
-    drawRect(cutLayer, 0, -sideHeight, length, sideHeight, [255, 0, 0], null);
-    // Côté gauche
-    drawRect(cutLayer, -sideHeight, 0, sideHeight, width, [255, 0, 0], null);
+    drawRect(cutLayer, 0, width, length, sideHeight, [255, 0, 0], null);          // Avant
+    drawRect(cutLayer, length, 0, sideHeight, width, [255, 0, 0], null);         // Droite
+    drawRect(cutLayer, 0, -sideHeight, length, sideHeight, [255, 0, 0], null);   // Arrière
+    drawRect(cutLayer, -sideHeight, 0, sideHeight, width, [255, 0, 0], null);  // Gauche
 
     // Rabats (si activé)
     if (flapType !== "none") {
@@ -143,4 +117,34 @@ function generateRectangularBox(cutLayer, foldLayer, guideLayer, length, width, 
         drawRect(foldLayer, 0, width + sideHeight, length, flapHeight, [0, 0, 255], null);
         drawRect(foldLayer, 0, -sideHeight - flapHeight, length, flapHeight, [0, 0, 255], null);
         // Rabats gauche/droite
-        drawRect(foldLayer, length, 0, flapHeight, width, [0, 
+        drawRect(foldLayer, length, 0, flapHeight, width, [0, 0, 255], null);
+        drawRect(foldLayer, -sideHeight - flapHeight, 0, flapHeight, width, [0, 0, 255], null);
+    }
+}
+
+// Génère un couvercle
+function generateLid(cutLayer, foldLayer, length, width, height, thickness, flapType) {
+    var lidLength = length + 2 * thickness;
+    var lidWidth = width + 2 * thickness;
+    var lidHeight = height * 0.3; // Hauteur du couvercle (30% de la boîte)
+
+    // Base du couvercle
+    drawRect(cutLayer, length + 10, width + 10, lidLength, lidWidth, [255, 0, 0], null);
+
+    // Côtés du couvercle
+    drawRect(cutLayer, length + 10, width + 10 + lidWidth, lidLength, lidHeight, [255, 0, 0], null); // Avant
+    drawRect(cutLayer, length + 10 + lidLength, width + 10, lidHeight, lidWidth, [255, 0, 0], null); // Droite
+}
+
+// ===== INTERFACE UTILISATEUR =====
+function showDialog() {
+    var dialog = new Window("dialog", "Générateur de boîtes");
+    dialog.orientation = "column";
+    dialog.alignChildren = ["fill", "top"];
+    dialog.spacing = 10;
+    dialog.margins = 16;
+
+    // Type de boîte
+    var typeGroup = dialog.add("group");
+    typeGroup.add("statictext", undefined, "Type de boîte :");
+    var typeDropdown = typeGroup.add("dropdownlist", undefined, ["Boîte rectangulaire", "Boîte cube", "Boîte + couvercle", "Boîte à fenêtre
