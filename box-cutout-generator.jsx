@@ -1,8 +1,8 @@
 // =============================================
-// PACKDORA BOX GENERATOR v2.5
+// PACKDORA BOX GENERATOR v2.6
 // Générateur de boîtes pour Adobe Illustrator
 // Auteur : Illustrator Script Smith
-// Version : 2.5.0
+// Version : 2.6.0
 // Date : 28/10/2026
 // Compatibilité : Illustrator CC 2020+
 // =============================================
@@ -163,13 +163,4 @@ function showDialog() {
 
             var dimensions = {
                 length: parseFloat(lengthInput.text) || 100,
-                width: parseFloat(widthInput.text) || 100,
-                height: parseFloat(heightInput.text) || 50
-            };
-
-            var material = MATERIALS[selectedMaterialKey];
-            var thickness = mmToPt(material.thickness);
-
-            // Créer les calques
-            var cutLayer = createLayer(doc, "Découpe", [255, 0, 0]);
-            var foldLayer = createLayer(doc, "Pliage", [0, 0, 255
+                width: parseFloat(width
