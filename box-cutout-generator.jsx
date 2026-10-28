@@ -1,8 +1,8 @@
 // =============================================
-// PACKDORA BOX GENERATOR v2.2
+// PACKDORA BOX GENERATOR v2.3
 // Générateur de boîtes pour Adobe Illustrator
 // Auteur : Illustrator Script Smith
-// Version : 2.2.0
+// Version : 2.3.0
 // Date : 28/10/2026
 // Compatibilité : Illustrator CC 2020+
 // =============================================
@@ -14,16 +14,13 @@ var BOX_TYPES = {
     "rectangular": { name: "Boîte rectangulaire", hasFlaps: true, hasLid: false },
     "cube": { name: "Boîte cube", hasFlaps: true, hasLid: false },
     "rectangular_lid": { name: "Boîte + couvercle", hasFlaps: true, hasLid: true },
-    "window_box": { name: "Boîte à fenêtre", hasFlaps: true, hasWindow: true },
-    "gable": { name: "Boîte à anses", hasHandle: true },
-    "compartments_4": { name: "Boîte 4 compartiments", compartments: 4 }
+    "window_box": { name: "Boîte à fenêtre", hasFlaps: true, hasWindow: true }
 };
 
 var MATERIALS = {
     "kraft_2mm": { name: "Kraft 2mm", thickness: 2, color: [150, 100, 50] },
     "white_cardboard_1.5mm": { name: "Carton blanc 1.5mm", thickness: 1.5, color: [240, 240, 240] },
-    "corrugated_3mm": { name: "Ondulé 3mm", thickness: 3, color: [200, 180, 150] },
-    "acrylic_2mm": { name: "Acrylique 2mm", thickness: 2, color: [200, 220, 255] }
+    "corrugated_3mm": { name: "Ondulé 3mm", thickness: 3, color: [200, 180, 150] }
 };
 
 var FLAP_TYPES = {
@@ -33,15 +30,9 @@ var FLAP_TYPES = {
     "auto_lock": { name: "Auto-verrouillant", factor: 1.5 }
 };
 
-var WINDOW_SHAPES = {
-    "none": "Aucune",
-    "square": "Carrée",
-    "circle": "Ronde"
-};
-
 // ===== FONCTIONS UTILITAIRES =====
 function mmToPt(mm) {
-    return mm * 2.83464567; // Conversion mm → pt
+    return mm * 2.83464567;
 }
 
 function createLayer(doc, name, color) {
@@ -51,89 +42,33 @@ function createLayer(doc, name, color) {
     return layer;
 }
 
-function drawRect(layer, x, y, width, height, strokeColor, fillColor) {
+function drawRect(layer, x, y, width, height, strokeColor) {
     var rect = layer.pathItems.rectangle(y, x, width, height);
     rect.stroked = true;
     rect.strokeColor.rgb = strokeColor;
-    rect.filled = (fillColor !== undefined);
-    if (fillColor) rect.fillColor.rgb = fillColor;
+    rect.filled = false;
     return rect;
 }
 
-function drawCircle(layer, cx, cy, radius, strokeColor) {
-    var circle = layer.pathItems.ellipse(cy, cx, radius * 2, radius * 2);
-    circle.stroked = true;
-    circle.strokeColor.rgb = strokeColor;
-    circle.filled = false;
-    return circle;
-}
-
 // ===== GÉNÉRATION DES BOÎTES =====
-function generateBox(doc, boxType, material, dimensions, flapType, options) {
-    var length = mmToPt(dimensions.length);
-    var width = mmToPt(dimensions.width);
-    var height = mmToPt(dimensions.height);
-    var thickness = mmToPt(material.thickness);
-
-    // Créer les calques
-    var cutLayer = createLayer(doc, "Découpe", [255, 0, 0]);    // Rouge
-    var foldLayer = createLayer(doc, "Pliage", [0, 0, 255]);    // Bleu
-    var guideLayer = createLayer(doc, "Guides", [0, 255, 0]);   // Vert
-
-    // Générer selon le type de boîte
-    switch (boxType) {
-        case "rectangular":
-        case "rectangular_lid":
-            generateRectangularBox(cutLayer, foldLayer, guideLayer, length, width, height, thickness, flapType, options);
-            if (boxType === "rectangular_lid") {
-                generateLid(cutLayer, foldLayer, length, width, height, thickness, flapType);
-            }
-            break;
-        case "cube":
-            generateRectangularBox(cutLayer, foldLayer, guideLayer, length, length, height, thickness, flapType, options);
-            break;
-        case "window_box":
-            generateWindowBox(cutLayer, foldLayer, guideLayer, length, width, height, thickness, flapType, options);
-            break;
-    }
-}
-
-// Génère une boîte rectangulaire
-function generateRectangularBox(cutLayer, foldLayer, guideLayer, length, width, height, thickness, flapType, options) {
+function generateRectangularBox(cutLayer, foldLayer, length, width, height, thickness, flapType) {
     // Base
-    drawRect(cutLayer, 0, 0, length, width, [255, 0, 0], null);
+    drawRect(cutLayer, 0, 0, length, width, [255, 0, 0]);
 
-    // Côtés (avant, droite, arrière, gauche)
-    var sideHeight = height;
-    drawRect(cutLayer, 0, width, length, sideHeight, [255, 0, 0], null);          // Avant
-    drawRect(cutLayer, length, 0, sideHeight, width, [255, 0, 0], null);         // Droite
-    drawRect(cutLayer, 0, -sideHeight, length, sideHeight, [255, 0, 0], null);   // Arrière
-    drawRect(cutLayer, -sideHeight, 0, sideHeight, width, [255, 0, 0], null);  // Gauche
+    // Côtés
+    drawRect(cutLayer, 0, width, length, height, [255, 0, 0]); // Avant
+    drawRect(cutLayer, length, 0, height, width, [255, 0, 0]); // Droite
+    drawRect(cutLayer, 0, -height, length, height, [255, 0, 0]); // Arrière
+    drawRect(cutLayer, -height, 0, height, width, [255, 0, 0]); // Gauche
 
-    // Rabats (si activé)
+    // Rabats
     if (flapType !== "none") {
         var flapHeight = flapType.factor * thickness;
-        // Rabats avant/arrière
-        drawRect(foldLayer, 0, width + sideHeight, length, flapHeight, [0, 0, 255], null);
-        drawRect(foldLayer, 0, -sideHeight - flapHeight, length, flapHeight, [0, 0, 255], null);
-        // Rabats gauche/droite
-        drawRect(foldLayer, length, 0, flapHeight, width, [0, 0, 255], null);
-        drawRect(foldLayer, -sideHeight - flapHeight, 0, flapHeight, width, [0, 0, 255], null);
+        drawRect(foldLayer, 0, width + height, length, flapHeight, [0, 0, 255]); // Rabat avant
+        drawRect(foldLayer, 0, -height - flapHeight, length, flapHeight, [0, 0, 255]); // Rabat arrière
+        drawRect(foldLayer, length, 0, flapHeight, width, [0, 0, 255]); // Rabat droite
+        drawRect(foldLayer, -height - flapHeight, 0, flapHeight, width, [0, 0, 255]); // Rabat gauche
     }
-}
-
-// Génère un couvercle
-function generateLid(cutLayer, foldLayer, length, width, height, thickness, flapType) {
-    var lidLength = length + 2 * thickness;
-    var lidWidth = width + 2 * thickness;
-    var lidHeight = height * 0.3; // Hauteur du couvercle (30% de la boîte)
-
-    // Base du couvercle
-    drawRect(cutLayer, length + 10, width + 10, lidLength, lidWidth, [255, 0, 0], null);
-
-    // Côtés du couvercle
-    drawRect(cutLayer, length + 10, width + 10 + lidWidth, lidLength, lidHeight, [255, 0, 0], null); // Avant
-    drawRect(cutLayer, length + 10 + lidLength, width + 10, lidHeight, lidWidth, [255, 0, 0], null); // Droite
 }
 
 // ===== INTERFACE UTILISATEUR =====
@@ -146,5 +81,107 @@ function showDialog() {
 
     // Type de boîte
     var typeGroup = dialog.add("group");
-    typeGroup.add("statictext", undefined, "Type de boîte :");
-    var typeDropdown = typeGroup.add("dropdownlist", undefined, ["Boîte rectangulaire", "Boîte cube", "Boîte + couvercle", "Boîte à fenêtre
+    typeGroup.add("statictext", undefined, "Type de boîte:");
+    var typeDropdown = typeGroup.add("dropdownlist", undefined, ["Boîte rectangulaire", "Boîte cube", "Boîte + couvercle", "Boîte à fenêtre"]);
+    typeDropdown.selection = 0;
+
+    // Matériau
+    var materialGroup = dialog.add("group");
+    materialGroup.add("statictext", undefined, "Matériau:");
+    var materialDropdown = materialGroup.add("dropdownlist", undefined, ["Kraft 2mm", "Carton blanc 1.5mm", "Ondulé 3mm"]);
+    materialDropdown.selection = 0;
+
+    // Dimensions
+    var dimGroup = dialog.add("group");
+    dimGroup.orientation = "column";
+    dimGroup.add("statictext", undefined, "Dimensions (mm):");
+
+    var lengthGroup = dimGroup.add("group");
+    lengthGroup.add("statictext", undefined, "Longueur:");
+    var lengthInput = lengthGroup.add("edittext", undefined, "100");
+    lengthInput.preferredSize = [60, 20];
+
+    var widthGroup = dimGroup.add("group");
+    widthGroup.add("statictext", undefined, "Largeur:");
+    var widthInput = widthGroup.add("edittext", undefined, "100");
+    widthInput.preferredSize = [60, 20];
+
+    var heightGroup = dimGroup.add("group");
+    heightGroup.add("statictext", undefined, "Hauteur:");
+    var heightInput = heightGroup.add("edittext", undefined, "50");
+    heightInput.preferredSize = [60, 20];
+
+    // Type de rabat
+    var flapGroup = dialog.add("group");
+    flapGroup.add("statictext", undefined, "Type de rabat:");
+    var flapDropdown = flapGroup.add("dropdownlist", undefined, ["Aucun", "Rabats simples", "Rabats doubles", "Auto-verrouillant"]);
+    flapDropdown.selection = 1;
+
+    // Boutons
+    var buttonGroup = dialog.add("group");
+    buttonGroup.orientation = "row";
+    buttonGroup.alignment = "right";
+    var okButton = buttonGroup.add("button", undefined, "Générer");
+    var cancelButton = buttonGroup.add("button", undefined, "Annuler");
+
+    // Logique du bouton OK
+    okButton.onClick = function() {
+        try {
+            var doc = app.activeDocument;
+            if (!doc) {
+                alert("Aucun document ouvert!");
+                return;
+            }
+
+            var boxTypeKey = Object.keys(BOX_TYPES)[typeDropdown.selection.index];
+            var materialKey = Object.keys(MATERIALS)[materialDropdown.selection.index];
+            var flapTypeKey = Object.keys(FLAP_TYPES)[flapDropdown.selection.index];
+
+            var dimensions = {
+                length: parseFloat(lengthInput.text) || 100,
+                width: parseFloat(widthInput.text) || 100,
+                height: parseFloat(heightInput.text) || 50
+            };
+
+            var material = MATERIALS[materialKey];
+            var thickness = mmToPt(material.thickness);
+
+            // Créer les calques
+            var cutLayer = createLayer(doc, "Découpe", [255, 0, 0]);
+            var foldLayer = createLayer(doc, "Pliage", [0, 0, 255]);
+
+            // Générer la boîte
+            generateRectangularBox(
+                cutLayer,
+                foldLayer,
+                mmToPt(dimensions.length),
+                mmToPt(dimensions.width),
+                mmToPt(dimensions.height),
+                thickness,
+                FLAP_TYPES[flapTypeKey]
+            );
+
+            dialog.close();
+        } catch (e) {
+            alert("Erreur: " + e.message);
+        }
+    };
+
+    cancelButton.onClick = function() {
+        dialog.close();
+    };
+
+    dialog.show();
+}
+
+// ===== POINT D'ENTRÉE =====
+function main() {
+    if (app.documents.length === 0) {
+        alert("Veuillez ouvrir un document dans Illustrator.");
+        return;
+    }
+    showDialog();
+}
+
+// Exécuter le script
+main();
