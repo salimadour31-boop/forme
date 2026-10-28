@@ -1,8 +1,8 @@
 // =============================================
-// PACKDORA BOX GENERATOR v2.6
+// PACKDORA BOX GENERATOR v3.0
 // Générateur de boîtes pour Adobe Illustrator
 // Auteur : Illustrator Script Smith
-// Version : 2.6.0
+// Version : 3.0.0
 // Date : 28/10/2026
 // Compatibilité : Illustrator CC 2020+
 // =============================================
@@ -11,28 +11,28 @@
 
 // ===== CONSTANTES =====
 var BOX_TYPES = {
-    "rectangular": { name: "Boîte rectangulaire", hasFlaps: true, hasLid: false },
-    "cube": { name: "Boîte cube", hasFlaps: true, hasLid: false },
-    "rectangular_lid": { name: "Boîte + couvercle", hasFlaps: true, hasLid: true },
-    "window_box": { name: "Boîte à fenêtre", hasFlaps: true, hasWindow: true }
+    rectangular: "Boîte rectangulaire",
+    cube: "Boîte cube",
+    rectangular_lid: "Boîte + couvercle",
+    window_box: "Boîte à fenêtre"
 };
 
 var MATERIALS = {
-    "kraft_2mm": { name: "Kraft 2mm", thickness: 2, color: [150, 100, 50] },
-    "white_cardboard_1.5mm": { name: "Carton blanc 1.5mm", thickness: 1.5, color: [240, 240, 240] },
-    "corrugated_3mm": { name: "Ondulé 3mm", thickness: 3, color: [200, 180, 150] }
+    kraft_2mm: { name: "Kraft 2mm", thickness: 2 },
+    white_cardboard_1_5mm: { name: "Carton blanc 1.5mm", thickness: 1.5 },
+    corrugated_3mm: { name: "Ondulé 3mm", thickness: 3 }
 };
 
 var FLAP_TYPES = {
-    "none": { name: "Aucun", factor: 0 },
-    "simple": { name: "Rabats simples", factor: 1 },
-    "double_flap": { name: "Rabats doubles", factor: 2 },
-    "auto_lock": { name: "Auto-verrouillant", factor: 1.5 }
+    none: "Aucun",
+    simple: "Rabats simples",
+    double_flap: "Rabats doubles",
+    auto_lock: "Auto-verrouillant"
 };
 
 // ===== FONCTIONS UTILITAIRES =====
 function mmToPt(mm) {
-    return mm * 2.83464567; // 1mm ≈ 2.83464567pt
+    return mm * 2.83464567; // 1mm = 2.83464567pt
 }
 
 function createLayer(doc, name, color) {
@@ -50,35 +50,33 @@ function drawRect(layer, x, y, width, height, strokeColor) {
     return rect;
 }
 
-// ===== FONCTION POUR EXTRAIRE LES CLÉS D'UN OBJET (ES3) =====
-function getObjectKeys(obj) {
-    var keys = [];
-    for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            keys.push(key);
-        }
-    }
-    return keys;
-}
+// ===== GÉNÉRATION DE LA BOÎTE =====
+function generateBox(doc, boxType, material, length, width, height, flapType) {
+    var thickness = mmToPt(material.thickness);
+    var lengthPt = mmToPt(length);
+    var widthPt = mmToPt(width);
+    var heightPt = mmToPt(height);
 
-// ===== GÉNÉRATION DES BOÎTES =====
-function generateRectangularBox(cutLayer, foldLayer, length, width, height, thickness, flapType) {
-    // Base
-    drawRect(cutLayer, 0, 0, length, width, [255, 0, 0]);
+    // Créer les calques
+    var cutLayer = createLayer(doc, "Découpe", [255, 0, 0]); // Rouge
+    var foldLayer = createLayer(doc, "Pliage", [0, 0, 255]); // Bleu
 
-    // Côtés
-    drawRect(cutLayer, 0, width, length, height, [255, 0, 0]); // Avant
-    drawRect(cutLayer, length, 0, height, width, [255, 0, 0]); // Droite
-    drawRect(cutLayer, 0, -height, length, height, [255, 0, 0]); // Arrière
-    drawRect(cutLayer, -height, 0, height, width, [255, 0, 0]); // Gauche
+    // Dessiner la base
+    drawRect(cutLayer, 0, 0, lengthPt, widthPt, [255, 0, 0]);
 
-    // Rabats
-    if (flapType && flapType !== "none") {
-        var flapHeight = flapType.factor * thickness;
-        drawRect(foldLayer, 0, width + height, length, flapHeight, [0, 0, 255]); // Rabat avant
-        drawRect(foldLayer, 0, -height - flapHeight, length, flapHeight, [0, 0, 255]); // Rabat arrière
-        drawRect(foldLayer, length, 0, flapHeight, width, [0, 0, 255]); // Rabat droite
-        drawRect(foldLayer, -height - flapHeight, 0, flapHeight, width, [0, 0, 255]); // Rabat gauche
+    // Dessiner les côtés
+    drawRect(cutLayer, 0, widthPt, lengthPt, heightPt, [255, 0, 0]); // Avant
+    drawRect(cutLayer, lengthPt, 0, heightPt, widthPt, [255, 0, 0]); // Droite
+    drawRect(cutLayer, 0, -heightPt, lengthPt, heightPt, [255, 0, 0]); // Arrière
+    drawRect(cutLayer, -heightPt, 0, heightPt, widthPt, [255, 0, 0]); // Gauche
+
+    // Dessiner les rabat (si activé)
+    if (flapType !== "none") {
+        var flapHeight = mmToPt(20); // Hauteur fixe pour l'exemple
+        drawRect(foldLayer, 0, widthPt + heightPt, lengthPt, flapHeight, [0, 0, 255]); // Rabat avant
+        drawRect(foldLayer, 0, -heightPt - flapHeight, lengthPt, flapHeight, [0, 0, 255]); // Rabat arrière
+        drawRect(foldLayer, lengthPt, 0, flapHeight, widthPt, [0, 0, 255]); // Rabat droite
+        drawRect(foldLayer, -heightPt - flapHeight, 0, flapHeight, widthPt, [0, 0, 255]); // Rabat gauche
     }
 }
 
@@ -94,9 +92,8 @@ function showDialog() {
     var typeGroup = dialog.add("group");
     typeGroup.add("statictext", undefined, "Type de boîte:");
     var typeDropdown = typeGroup.add("dropdownlist", undefined);
-    var boxTypeKeys = getObjectKeys(BOX_TYPES);
-    for (var i = 0; i < boxTypeKeys.length; i++) {
-        typeDropdown.add("item", BOX_TYPES[boxTypeKeys[i]].name);
+    for (var key in BOX_TYPES) {
+        typeDropdown.add("item", BOX_TYPES[key]);
     }
     typeDropdown.selection = 0;
 
@@ -104,9 +101,8 @@ function showDialog() {
     var materialGroup = dialog.add("group");
     materialGroup.add("statictext", undefined, "Matériau:");
     var materialDropdown = materialGroup.add("dropdownlist", undefined);
-    var materialKeys = getObjectKeys(MATERIALS);
-    for (var j = 0; j < materialKeys.length; j++) {
-        materialDropdown.add("item", MATERIALS[materialKeys[j]].name);
+    for (var matKey in MATERIALS) {
+        materialDropdown.add("item", MATERIALS[matKey].name);
     }
     materialDropdown.selection = 0;
 
@@ -134,9 +130,8 @@ function showDialog() {
     var flapGroup = dialog.add("group");
     flapGroup.add("statictext", undefined, "Type de rabat:");
     var flapDropdown = flapGroup.add("dropdownlist", undefined);
-    var flapTypeKeys = getObjectKeys(FLAP_TYPES);
-    for (var k = 0; k < flapTypeKeys.length; k++) {
-        flapDropdown.add("item", FLAP_TYPES[flapTypeKeys[k]].name);
+    for (var flapKey in FLAP_TYPES) {
+        flapDropdown.add("item", FLAP_TYPES[flapKey]);
     }
     flapDropdown.selection = 1;
 
@@ -152,17 +147,36 @@ function showDialog() {
         try {
             var doc = app.activeDocument;
             if (!doc) {
-                alert("Aucun document ouvert!");
+                alert("Aucun document ouvert dans Illustrator.");
                 return;
             }
 
-            // Récupérer les clés sélectionnées
-            var selectedBoxTypeKey = boxTypeKeys[typeDropdown.selection.index];
-            var selectedMaterialKey = materialKeys[materialDropdown.selection.index];
-            var selectedFlapTypeKey = flapTypeKeys[flapDropdown.selection.index];
+            // Récupérer les valeurs
+            var selectedBoxType = Object.keys(BOX_TYPES)[typeDropdown.selection.index];
+            var selectedMaterial = Object.keys(MATERIALS)[materialDropdown.selection.index];
+            var selectedFlapType = Object.keys(FLAP_TYPES)[flapDropdown.selection.index];
 
-            var dimensions = {
-    length: parseFloat(lengthInput.text) || 100,
-    width: parseFloat(widthInput.text) || 100,
-    height: parseFloat(heightInput.text) || 50
-};
+            var length = parseFloat(lengthInput.text) || 100;
+            var width = parseFloat(widthInput.text) || 100;
+            var height = parseFloat(heightInput.text) || 50;
+
+            generateBox(doc, selectedBoxType, MATERIALS[selectedMaterial], length, width, height, selectedFlapType);
+            dialog.close();
+        } catch (e) {
+            alert("Erreur: " + e.message);
+        }
+    };
+
+    cancelButton.onClick = function() {
+        dialog.close();
+    };
+
+    dialog.show();
+}
+
+// ===== POINT D'ENTRÉE =====
+if (app.documents.length > 0) {
+    showDialog();
+} else {
+    alert("Veuillez ouvrir un document dans Illustrator.");
+}
